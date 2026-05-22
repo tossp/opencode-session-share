@@ -1,0 +1,17 @@
+services:
+  opencode-share:
+    image: ghcr.io/tossp/opencode-session-share:latest
+    container_name: opencode-share
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      ADDR: ":3006"
+      DATA_PATH: "/data/opencode-share.db"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-}"
+      DEFAULT_SHARE_PASSWORD: "${DEFAULT_SHARE_PASSWORD:-}"
+    volumes:
+      - opencode_share_data:/data
+
+volumes:
+  opencode_share_data:

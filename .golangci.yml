@@ -1,0 +1,62 @@
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+formatters:
+  enable:
+    - gci
+    - gofumpt
+    - goimports
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - durationcheck
+    - errchkjson
+    - errorlint
+    - gocheckcompilerdirectives
+    - gosec
+    - loggercheck
+    - makezero
+    - nilerr
+    - nilnesserr
+    - noctx
+    - nolintlint
+    - nosprintfhostport
+    - predeclared
+    - rowserrcheck
+    - revive
+    - sqlclosecheck
+    - testifylint
+    - unconvert
+    - usestdlibvars
+    - wastedassign
+    - misspell
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    govet:
+      enable:
+        - shadow
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+
+  exclusions:
+    generated: strict
+    presets:
+      - comments
+      - common-false-positives
+      - std-error-handling
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - noctx

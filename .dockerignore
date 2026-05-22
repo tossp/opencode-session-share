@@ -1,0 +1,11 @@
+.git
+.gitignore
+tmp/
+data/
+server
+*.db
+*.db-journal
+*.log
+.env
+.env.*
+README.md
