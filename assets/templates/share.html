@@ -1,0 +1,33 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>OpenCode 分享 - {{share_id}}</title>
+     <meta name="robots" content="noindex, nofollow">
+     <meta name="description" content="opencode - The AI coding agent built for the terminal.">
+     <script>
+         window.SHARE_ID = "{{share_id}}";
+     </script>
+     <!-- Import diff library from local vendor -->
+     <script src="/static/vendor/diff.min.js"></script>
+     <script src="/static/share.js" defer></script>
+     <link rel="stylesheet" href="/static/share.css">
+ </head>
+ <body>
+     <div id="app">
+         <div class="loading-container">
+             <div class="loading-spinner"></div>
+             <p>正在加载分享内容...</p>
+         </div>
+     </div>
+
+     <div id="error-container" style="display: none;">
+         <div class="error-content">
+             <h1>分享不存在</h1>
+             <p>你访问的分享不存在，或已被删除。</p>
+             <a href="/">返回首页</a>
+         </div>
+     </div>
+ </body>
+ </html>
