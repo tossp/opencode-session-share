@@ -176,9 +176,9 @@ func TestSetPasswordAcceptsAndRejectsLengthBoundary(t *testing.T) {
 
 func TestDataWithPasswordUsesDefaultPassword(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-data-default-password")
-	if err != nil {
-		t.Fatalf("Create() error = %v", err)
+	created, createErr := service.Create("session-data-default-password")
+	if createErr != nil {
+		t.Fatalf("Create() error = %v", createErr)
 	}
 	if err := service.Sync(created.ID, created.Secret, rawMessages(t, `{"content":"secret"}`)); err != nil {
 		t.Fatalf("Sync() error = %v", err)
@@ -223,9 +223,9 @@ func TestDataWithPasswordReturnsNotFound(t *testing.T) {
 
 func TestDataWithPasswordReturnsCopiedDataSlice(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-data-copy")
-	if err != nil {
-		t.Fatalf("Create() error = %v", err)
+	created, createErr := service.Create("session-data-copy")
+	if createErr != nil {
+		t.Fatalf("Create() error = %v", createErr)
 	}
 	if err := service.Sync(created.ID, created.Secret, rawMessages(t, `{"_key":"first","title":"original"}`, `{"_key":"second"}`)); err != nil {
 		t.Fatalf("Sync() error = %v", err)
