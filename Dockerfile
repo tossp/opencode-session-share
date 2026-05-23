@@ -1,3 +1,15 @@
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /src
+
+RUN corepack enable
+
+COPY pnpm-lock.yaml ./
+COPY frontend ./frontend
+
+RUN pnpm --dir frontend install --frozen-lockfile
+RUN pnpm --dir frontend build
+
 FROM golang:1.26-alpine AS builder
 
 WORKDIR /src
@@ -6,6 +18,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
+
+COPY --from=frontend-builder /src/assets/static/frontend ./assets/static/frontend
 
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/opencode-share ./cmd/server
 

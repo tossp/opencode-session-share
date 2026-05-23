@@ -28,7 +28,7 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script src="/static/frontend/share.js" defer></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
@@ -153,6 +153,9 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	if !strings.Contains(bodyText, `/static/frontend/share.js`) {
 		t.Fatalf("share page missing frontend share.js reference: %s", bodyText)
 	}
+	if !strings.Contains(bodyText, `type="module" src="/static/frontend/share.js"`) {
+		t.Fatalf("share page missing module share.js reference: %s", bodyText)
+	}
 	if strings.Contains(bodyText, `/static/share.js`) {
 		t.Fatalf("share page still contains legacy share.js reference: %s", bodyText)
 	}
@@ -275,7 +278,7 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 
 	service := share.NewService(store)
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script src="/static/frontend/share.js" defer></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
@@ -322,7 +325,7 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script src="/static/frontend/share.js" defer></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
