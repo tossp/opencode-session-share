@@ -28,11 +28,14 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><body>{{share_id}}</body></html>`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script src="/static/frontend/share.js" defer></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
 		"static/share.js":      {Data: []byte(`console.log('test');`)},
+		"static/share.css":     {Data: []byte(`body { color: #000; }`)},
+		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
+		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
 	server, err := NewServer(share.NewService(store), assets, slog.New(slog.NewTextHandler(io.Discard, nil)), config)
 	if err != nil {
@@ -143,8 +146,46 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	if page.Code != http.StatusOK {
 		t.Fatalf("page status = %d", page.Code)
 	}
-	if !strings.Contains(page.Body.String(), `session-quote.test`) {
+	bodyText := page.Body.String()
+	if !strings.Contains(bodyText, `window.SHARE_ID = "session-quote.test";`) {
+		t.Fatalf("share page does not contain escaped share id assignment: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `/static/frontend/share.js`) {
+		t.Fatalf("share page missing frontend share.js reference: %s", bodyText)
+	}
+	if strings.Contains(bodyText, `/static/share.js`) {
+		t.Fatalf("share page still contains legacy share.js reference: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `/static/frontend/share.css`) {
+		t.Fatalf("share page missing frontend share.css reference: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `session-quote.test`) {
 		t.Fatalf("share page does not contain escaped share id: %s", page.Body.String())
+	}
+}
+
+func TestSharePageAndDataEndpointConsistency(t *testing.T) {
+	handler := testEchoWithConfig(t, Config{DefaultSharePassword: "default"})
+	created := createShare(t, handler, "session-consistency")
+
+	sync := request(t, handler, http.MethodPost, "/api/share/session-consistency/sync", `{"secret":"`+created.Secret+`","data":[{"_key":"session","title":"ok"}]}`)
+	if sync.Code != http.StatusOK {
+		t.Fatalf("sync status = %d", sync.Code)
+	}
+
+	page := request(t, handler, http.MethodGet, "/share/session-consistency", "")
+	if page.Code != http.StatusOK {
+		t.Fatalf("page status = %d", page.Code)
+	}
+
+	dataBlocked := request(t, handler, http.MethodGet, "/api/share/session-consistency/data", "")
+	if dataBlocked.Code != http.StatusUnauthorized {
+		t.Fatalf("data without password status = %d, want 401", dataBlocked.Code)
+	}
+
+	dataAllowed := requestWithSharePassword(t, handler, "/api/share/session-consistency/data", "default")
+	if dataAllowed.Code != http.StatusOK {
+		t.Fatalf("data with password status = %d", dataAllowed.Code)
 	}
 }
 
@@ -234,11 +275,14 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 
 	service := share.NewService(store)
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><body>{{share_id}}</body></html>`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script src="/static/frontend/share.js" defer></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
 		"static/share.js":      {Data: []byte(`console.log('test');`)},
+		"static/share.css":     {Data: []byte(`body { color: #000; }`)},
+		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
+		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
 	server, err := NewServer(service, assets, slog.New(slog.NewTextHandler(io.Discard, nil)), Config{})
 	if err != nil {
@@ -278,11 +322,14 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><body>{{share_id}}</body></html>`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script src="/static/frontend/share.js" defer></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
 		"static/share.js":      {Data: []byte(`console.log('test');`)},
+		"static/share.css":     {Data: []byte(`body { color: #000; }`)},
+		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
+		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	server, err := NewServer(share.NewService(store), assets, logger, Config{})
