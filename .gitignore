@@ -1,6 +1,6 @@
 /data/
 /server
-/tmp/
-/assets/static/frontend/
-node_modules
+/assets/static/
 .sisyphus/
+tmp/
+node_modules
