@@ -28,12 +28,12 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 	assets := fstest.MapFS{
-		"templates/share.html":      {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html":      {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/frontend/admin.js"></script><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div></body></html>`)},
-		"static/frontend/admin.css": {Data: []byte(`body {}`)},
-		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
-		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
-		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/share.js"></script><link rel="stylesheet" href="/static/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/admin.js"></script><link rel="stylesheet" href="/static/admin.css"></head><body><div id="app"></div></body></html>`)},
+		"static/admin.css":     {Data: []byte(`body {}`)},
+		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"static/share.js":      {Data: []byte(`console.log('frontend share');`)},
+		"static/share.css":     {Data: []byte(`body { color: #111; }`)},
 	}
 	server, err := NewServer(share.NewService(store), assets, slog.New(slog.NewTextHandler(io.Discard, nil)), config)
 	if err != nil {
@@ -148,16 +148,16 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	if !strings.Contains(bodyText, `window.SHARE_ID = "session-quote.test";`) {
 		t.Fatalf("share page does not contain escaped share id assignment: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/frontend/share.js`) {
+	if !strings.Contains(bodyText, `/static/share.js`) {
 		t.Fatalf("share page missing frontend share.js reference: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `type="module" src="/static/frontend/share.js"`) {
+	if !strings.Contains(bodyText, `type="module" src="/static/share.js"`) {
 		t.Fatalf("share page missing module share.js reference: %s", bodyText)
 	}
-	if strings.Contains(bodyText, `/static/share.js`) {
-		t.Fatalf("share page still contains legacy share.js reference: %s", bodyText)
+	if strings.Contains(bodyText, `/static/frontend`) {
+		t.Fatalf("share page still contains frontend static namespace: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/frontend/share.css`) {
+	if !strings.Contains(bodyText, `/static/share.css`) {
 		t.Fatalf("share page missing frontend share.css reference: %s", bodyText)
 	}
 	if !strings.Contains(bodyText, `session-quote.test`) {
@@ -168,8 +168,8 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	}
 }
 
-// Test that share page does not contain root static asset paths
-func TestSharePageNoRootStaticAssets(t *testing.T) {
+// Test that share page does not contain the old frontend static namespace.
+func TestSharePageNoFrontendStaticNamespace(t *testing.T) {
 	handler := testEcho(t)
 	created := createShare(t, handler, "session-static-test")
 	page := request(t, handler, http.MethodGet, "/share/"+created.ID, "")
@@ -179,11 +179,7 @@ func TestSharePageNoRootStaticAssets(t *testing.T) {
 
 	bodyText := page.Body.String()
 	forbiddenPaths := []string{
-		"/static/favicon",
-		"/static/site.webmanifest",
-		"/static/social-share",
-		"/static/web-app-manifest",
-		"/static/apple-touch-icon",
+		"/static/frontend",
 		"/static/vendor",
 	}
 
@@ -305,12 +301,12 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 
 	service := share.NewService(store)
 	assets := fstest.MapFS{
-		"templates/share.html":      {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html":      {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/frontend/admin.js"></script><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div></body></html>`)},
-		"static/frontend/admin.css": {Data: []byte(`body {}`)},
-		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
-		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
-		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/share.js"></script><link rel="stylesheet" href="/static/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/admin.js"></script><link rel="stylesheet" href="/static/admin.css"></head><body><div id="app"></div></body></html>`)},
+		"static/admin.css":     {Data: []byte(`body {}`)},
+		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"static/share.js":      {Data: []byte(`console.log('frontend share');`)},
+		"static/share.css":     {Data: []byte(`body { color: #111; }`)},
 	}
 	server, err := NewServer(service, assets, slog.New(slog.NewTextHandler(io.Discard, nil)), Config{})
 	if err != nil {
@@ -350,12 +346,12 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 
 	assets := fstest.MapFS{
-		"templates/share.html":      {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html":      {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/frontend/admin.js"></script><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div></body></html>`)},
-		"static/frontend/admin.css": {Data: []byte(`body {}`)},
-		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
-		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
-		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
+		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/share.js"></script><link rel="stylesheet" href="/static/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/admin.js"></script><link rel="stylesheet" href="/static/admin.css"></head><body><div id="app"></div></body></html>`)},
+		"static/admin.css":     {Data: []byte(`body {}`)},
+		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"static/share.js":      {Data: []byte(`console.log('frontend share');`)},
+		"static/share.css":     {Data: []byte(`body { color: #111; }`)},
 	}
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
 	server, err := NewServer(share.NewService(store), assets, logger, Config{})
@@ -398,17 +394,17 @@ func TestAdminListsAndSetsSharePassword(t *testing.T) {
 	if !strings.Contains(bodyText, `id="app"`) {
 		t.Fatalf("admin page missing #app mount: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/frontend/admin.js`) {
+	if !strings.Contains(bodyText, `/static/admin.js`) {
 		t.Fatalf("admin page missing frontend admin.js reference: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `type="module" src="/static/frontend/admin.js"`) {
+	if !strings.Contains(bodyText, `type="module" src="/static/admin.js"`) {
 		t.Fatalf("admin page missing module admin.js reference: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/frontend/admin.css`) {
+	if !strings.Contains(bodyText, `/static/admin.css`) {
 		t.Fatalf("admin page missing frontend admin.css reference: %s", bodyText)
 	}
-	if strings.Contains(bodyText, `/static/admin.js`) || strings.Contains(bodyText, `/static/admin.css`) {
-		t.Fatalf("admin page still contains legacy admin asset reference: %s", bodyText)
+	if strings.Contains(bodyText, `/static/frontend`) {
+		t.Fatalf("admin page still contains frontend static namespace: %s", bodyText)
 	}
 
 	list := requestAuth(t, handler, http.MethodGet, "/api/admin/shares", "", "admin")
@@ -454,8 +450,8 @@ func TestAdminDisabledWithoutPassword(t *testing.T) {
 	}
 }
 
-// Test that admin page does not contain root static asset paths
-func TestAdminPageNoRootStaticAssets(t *testing.T) {
+// Test that admin page does not contain the old frontend static namespace.
+func TestAdminPageNoFrontendStaticNamespace(t *testing.T) {
 	handler := testEchoWithConfig(t, Config{AdminPassword: "admin"})
 	createShare(t, handler, "session-admin-static-test")
 	page := requestAuth(t, handler, http.MethodGet, "/admin", "", "admin")
@@ -465,11 +461,7 @@ func TestAdminPageNoRootStaticAssets(t *testing.T) {
 
 	bodyText := page.Body.String()
 	forbiddenPaths := []string{
-		"/static/favicon",
-		"/static/site.webmanifest",
-		"/static/social-share",
-		"/static/web-app-manifest",
-		"/static/apple-touch-icon",
+		"/static/frontend",
 		"/static/vendor",
 	}
 

@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [svelte()],
   build: {
-    outDir: '../assets/static/frontend',
+    outDir: '../assets/static',
     emptyOutDir: true,
     rollupOptions: {
       input: {
@@ -13,6 +13,7 @@ export default defineConfig({
       },
       output: {
         entryFileNames: '[name].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
         assetFileNames: '[name][extname]'
       }
     }

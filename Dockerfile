@@ -19,7 +19,7 @@ RUN go mod download
 
 COPY . .
 
-COPY --from=frontend-builder /src/assets/static/frontend ./assets/static/frontend
+COPY --from=frontend-builder /src/assets/static ./assets/static
 
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/opencode-share ./cmd/server
 
