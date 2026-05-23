@@ -163,6 +163,9 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	if !strings.Contains(bodyText, `session-quote.test`) {
 		t.Fatalf("share page does not contain escaped share id: %s", page.Body.String())
 	}
+	if strings.Contains(bodyText, `/static/vendor`) {
+		t.Fatalf("share page still contains /static/vendor reference: %s", bodyText)
+	}
 }
 
 func TestSharePageAndDataEndpointConsistency(t *testing.T) {
