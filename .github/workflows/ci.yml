@@ -40,6 +40,13 @@ jobs:
       - name: Frontend build
         run: pnpm --dir frontend build
 
+      - name: Upload frontend static assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
+          if-no-files-found: error
+
       - name: Frontend tests
         run: pnpm --dir frontend test:run
 
@@ -61,6 +68,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
@@ -80,6 +93,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
 
       - name: Download dependencies
         run: go mod download
@@ -111,6 +130,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
+
       - name: Download dependencies
         run: go mod download
 
@@ -132,6 +157,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
 
       - name: Download dependencies
         run: go mod download
@@ -155,6 +186,12 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
+
       - name: Download dependencies
         run: go mod download
 
@@ -175,6 +212,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
 
       - name: Run govulncheck
         uses: golang/govulncheck-action@v1
@@ -251,6 +294,12 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Download frontend static assets
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-static
+          path: assets/static
 
       - name: Build for CodeQL
         run: go build ./cmd/server
