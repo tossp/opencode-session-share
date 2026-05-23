@@ -3,3 +3,4 @@
 /tmp/
 /assets/static/frontend/
 node_modules
+.sisyphus/
