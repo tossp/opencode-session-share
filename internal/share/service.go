@@ -38,6 +38,7 @@ type Share struct {
 	ID        string            `json:"id"`
 	Secret    string            `json:"secret"`
 	SessionID string            `json:"sessionID"`
+	ClientIP  string            `json:"clientIP"`
 	Data      []json.RawMessage `json:"data"`
 	Password  string            `json:"password"`
 	CreatedAt time.Time         `json:"createdAt"`
@@ -48,6 +49,7 @@ type Share struct {
 type Summary struct {
 	ID              string    `json:"id"`
 	SessionID       string    `json:"sessionID"`
+	ClientIP        string    `json:"clientIP"`
 	Items           int       `json:"items"`
 	HasPassword     bool      `json:"hasPassword"`
 	UsesDefaultPass bool      `json:"usesDefaultPassword"`
@@ -66,7 +68,7 @@ func NewService(store *Store) *Service {
 }
 
 // Create creates a new share whose ID matches the opencode session ID.
-func (s *Service) Create(sessionID string) (Share, error) {
+func (s *Service) Create(sessionID, clientIP string) (Share, error) {
 	if err := validateSessionID(sessionID); err != nil {
 		return Share{}, err
 	}
@@ -76,6 +78,7 @@ func (s *Service) Create(sessionID string) (Share, error) {
 		ID:        sessionID,
 		Secret:    uuid.NewString(),
 		SessionID: sessionID,
+		ClientIP:  clientIP,
 		Data:      []json.RawMessage{},
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -105,6 +108,7 @@ func (s *Service) List(defaultPassword string) ([]Summary, error) {
 		summaries = append(summaries, Summary{
 			ID:              share.ID,
 			SessionID:       share.SessionID,
+			ClientIP:        share.ClientIP,
 			Items:           len(share.Data),
 			HasPassword:     share.Password != "" || defaultPassword != "",
 			UsesDefaultPass: share.Password == "" && defaultPassword != "",

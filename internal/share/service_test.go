@@ -20,17 +20,17 @@ func newTestService(t *testing.T) *Service {
 
 func TestCreateDuplicateShare(t *testing.T) {
 	service := newTestService(t)
-	if _, err := service.Create("session-1"); err != nil {
+	if _, err := service.Create("session-1", ""); err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
-	if _, err := service.Create("session-1"); !errors.Is(err, ErrAlreadyExists) {
+	if _, err := service.Create("session-1", ""); !errors.Is(err, ErrAlreadyExists) {
 		t.Fatalf("Create() duplicate error = %v, want ErrAlreadyExists", err)
 	}
 }
 
 func TestSyncReplacesByKeyAndAppendsWithoutKey(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-sync")
+	created, err := service.Create("session-sync", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -63,7 +63,7 @@ func TestSyncReplacesByKeyAndAppendsWithoutKey(t *testing.T) {
 
 func TestInvalidSecret(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-secret")
+	created, err := service.Create("session-secret", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -74,14 +74,14 @@ func TestInvalidSecret(t *testing.T) {
 
 func TestRejectsInvalidSessionID(t *testing.T) {
 	service := newTestService(t)
-	if _, err := service.Create("session/<script>"); !errors.Is(err, ErrInvalidInput) {
+	if _, err := service.Create("session/<script>", ""); !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("Create() error = %v, want ErrInvalidInput", err)
 	}
 }
 
 func TestRejectsOversizedSyncItem(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-size")
+	created, err := service.Create("session-size", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -95,7 +95,7 @@ func TestCreateAcceptsAndRejectsSessionIDLengthBoundary(t *testing.T) {
 	service := newTestService(t)
 
 	valid := strings.Repeat("a", MaxSessionIDLength)
-	created, err := service.Create(valid)
+	created, err := service.Create(valid, "")
 	if err != nil {
 		t.Fatalf("Create(valid) error = %v", err)
 	}
@@ -104,14 +104,14 @@ func TestCreateAcceptsAndRejectsSessionIDLengthBoundary(t *testing.T) {
 	}
 
 	invalid := strings.Repeat("a", MaxSessionIDLength+1)
-	if _, err := service.Create(invalid); !errors.Is(err, ErrInvalidInput) {
+	if _, err := service.Create(invalid, ""); !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("Create(invalid) error = %v, want ErrInvalidInput", err)
 	}
 }
 
 func TestSyncRejectsIncomingItemsOverMaxSyncItems(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-sync-limit")
+	created, err := service.Create("session-sync-limit", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -128,7 +128,7 @@ func TestSyncRejectsIncomingItemsOverMaxSyncItems(t *testing.T) {
 
 func TestSyncRejectsShareDataOverMaxShareDataBytes(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-total-size")
+	created, err := service.Create("session-total-size", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -159,7 +159,7 @@ func TestSyncRejectsShareDataOverMaxShareDataBytes(t *testing.T) {
 
 func TestSetPasswordAcceptsAndRejectsLengthBoundary(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-password-size")
+	created, err := service.Create("session-password-size", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -176,7 +176,7 @@ func TestSetPasswordAcceptsAndRejectsLengthBoundary(t *testing.T) {
 
 func TestDataWithPasswordUsesDefaultPassword(t *testing.T) {
 	service := newTestService(t)
-	created, createErr := service.Create("session-data-default-password")
+	created, createErr := service.Create("session-data-default-password", "")
 	if createErr != nil {
 		t.Fatalf("Create() error = %v", createErr)
 	}
@@ -198,7 +198,7 @@ func TestDataWithPasswordUsesDefaultPassword(t *testing.T) {
 
 func TestDataWithPasswordSharePasswordOverridesDefault(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-data-share-password")
+	created, err := service.Create("session-data-share-password", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -223,7 +223,7 @@ func TestDataWithPasswordReturnsNotFound(t *testing.T) {
 
 func TestDataWithPasswordReturnsCopiedDataSlice(t *testing.T) {
 	service := newTestService(t)
-	created, createErr := service.Create("session-data-copy")
+	created, createErr := service.Create("session-data-copy", "")
 	if createErr != nil {
 		t.Fatalf("Create() error = %v", createErr)
 	}
@@ -252,7 +252,7 @@ func TestDataWithPasswordReturnsCopiedDataSlice(t *testing.T) {
 
 func TestSyncLastWriteWinsForDuplicateIncomingKey(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-duplicate-key")
+	created, err := service.Create("session-duplicate-key", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -285,7 +285,7 @@ func TestSyncLastWriteWinsForDuplicateIncomingKey(t *testing.T) {
 
 func TestSyncMixedKeyedReplacementAndUnkeyedAppend(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-mixed-merge")
+	created, err := service.Create("session-mixed-merge", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -345,7 +345,7 @@ func TestCreateAcceptsAllowedSessionIDPunctuation(t *testing.T) {
 	service := newTestService(t)
 
 	for _, sessionID := range []string{"session-id", "session_id", "session.id", "session:id"} {
-		created, err := service.Create(sessionID)
+		created, err := service.Create(sessionID, "")
 		if err != nil {
 			t.Fatalf("Create(%q) error = %v", sessionID, err)
 		}
@@ -357,7 +357,7 @@ func TestCreateAcceptsAllowedSessionIDPunctuation(t *testing.T) {
 
 func TestSyncAcceptsExactlyMaxSyncItems(t *testing.T) {
 	service := newTestService(t)
-	created, err := service.Create("session-sync-limit-exact")
+	created, err := service.Create("session-sync-limit-exact", "")
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -376,6 +376,52 @@ func TestSyncAcceptsExactlyMaxSyncItems(t *testing.T) {
 	}
 	if len(data) != MaxSyncItems {
 		t.Fatalf("len(data) = %d, want %d", len(data), MaxSyncItems)
+	}
+}
+
+func TestCreateStoresClientIP(t *testing.T) {
+	service := newTestService(t)
+
+	created, err := service.Create("session-client-ip", "203.0.113.10")
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	if created.ClientIP != "203.0.113.10" {
+		t.Fatalf("created.ClientIP = %q, want %q", created.ClientIP, "203.0.113.10")
+	}
+
+	stored, found, err := service.Get(created.ID)
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if !found {
+		t.Fatal("Get() found = false, want true")
+	}
+	if stored.ClientIP != "203.0.113.10" {
+		t.Fatalf("stored.ClientIP = %q, want %q", stored.ClientIP, "203.0.113.10")
+	}
+}
+
+func TestListIncludesClientIP(t *testing.T) {
+	service := newTestService(t)
+
+	created, err := service.Create("session-list-client-ip", "203.0.113.11")
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+
+	summaries, err := service.List("")
+	if err != nil {
+		t.Fatalf("List() error = %v", err)
+	}
+	if len(summaries) != 1 {
+		t.Fatalf("len(summaries) = %d, want 1", len(summaries))
+	}
+	if summaries[0].ID != created.ID {
+		t.Fatalf("summaries[0].ID = %q, want %q", summaries[0].ID, created.ID)
+	}
+	if summaries[0].ClientIP != "203.0.113.11" {
+		t.Fatalf("summaries[0].ClientIP = %q, want %q", summaries[0].ClientIP, "203.0.113.11")
 	}
 }
 

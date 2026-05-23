@@ -16,8 +16,9 @@ async function loadShares() {
   const shares = await response.json();
   sharesEl.innerHTML = shares.map(share => {
     const passwordText = share.hasPassword ? (share.usesDefaultPassword ? '默认密码' : '自定义密码') : '公开';
+    const clientIP = share.clientIP ? '<br><span class="muted">IP: ' + escapeHTML(share.clientIP) + '</span>' : '';
     return '<tr>' +
-      '<td><strong>' + escapeHTML(share.id) + '</strong><br><span class="muted">' + escapeHTML(share.sessionID) + '</span></td>' +
+      '<td><strong>' + escapeHTML(share.id) + '</strong><br><span class="muted">' + escapeHTML(share.sessionID) + '</span>' + clientIP + '</td>' +
       '<td>' + share.items + '</td>' +
       '<td>' + escapeHTML(passwordText) + '</td>' +
       '<td>' + escapeHTML(new Date(share.updatedAt).toLocaleString()) + '</td>' +

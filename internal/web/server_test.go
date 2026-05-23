@@ -12,6 +12,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/labstack/echo/v4"
 	"github.com/tossp/opencode-session-share/internal/share"
 )
 
@@ -198,6 +199,112 @@ func TestCreateShareURLFallbackAndForwardedHeaders(t *testing.T) {
 	}
 }
 
+func TestRealIPUsesXForwardedForExtractor(t *testing.T) {
+	app, ok := testEcho(t).(*echo.Echo)
+	if !ok {
+		t.Fatal("handler is not *echo.Echo")
+	}
+
+	app.GET("/real-ip", func(c echo.Context) error {
+		return c.String(http.StatusOK, c.RealIP())
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/real-ip", nil)
+	req.Header.Set("X-Forwarded-For", "198.51.100.10, 203.0.113.10")
+	req.RemoteAddr = "10.0.0.1:1234"
+	req.Host = "example.com"
+
+	res := httptest.NewRecorder()
+	app.ServeHTTP(res, req)
+
+	if res.Code != http.StatusOK {
+		t.Fatalf("real ip status = %d", res.Code)
+	}
+	if got := strings.TrimSpace(res.Body.String()); got != "203.0.113.10" {
+		t.Fatalf("real ip = %q, want %q", got, "203.0.113.10")
+	}
+}
+
+func TestCreateSharePersistsClientIP(t *testing.T) {
+	store, err := share.OpenStore(filepath.Join(t.TempDir(), "share.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	service := share.NewService(store)
+	assets := fstest.MapFS{
+		"templates/share.html": {Data: []byte(`<!doctype html><html><body>{{share_id}}</body></html>`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
+		"static/admin.css":     {Data: []byte(`body {}`)},
+		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"static/share.js":      {Data: []byte(`console.log('test');`)},
+	}
+	server, err := NewServer(service, assets, slog.New(slog.NewTextHandler(io.Discard, nil)), Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequest(http.MethodPost, "/api/share", strings.NewReader(`{"sessionID":"session-client-ip"}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("X-Forwarded-For", "198.51.100.10, 203.0.113.10")
+	request.RemoteAddr = "10.0.0.1:1234"
+	request.Host = "example.com"
+
+	response := httptest.NewRecorder()
+	server.Echo().ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("create status = %d", response.Code)
+	}
+
+	stored, found, err := service.Get("session-client-ip")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !found {
+		t.Fatal("stored share not found")
+	}
+	if stored.ClientIP != "203.0.113.10" {
+		t.Fatalf("stored.ClientIP = %q, want %q", stored.ClientIP, "203.0.113.10")
+	}
+}
+
+func TestAccessLogIncludesClientIP(t *testing.T) {
+	var logs bytes.Buffer
+	store, err := share.OpenStore(filepath.Join(t.TempDir(), "share.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	assets := fstest.MapFS{
+		"templates/share.html": {Data: []byte(`<!doctype html><html><body>{{share_id}}</body></html>`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
+		"static/admin.css":     {Data: []byte(`body {}`)},
+		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"static/share.js":      {Data: []byte(`console.log('test');`)},
+	}
+	logger := slog.New(slog.NewJSONHandler(&logs, nil))
+	server, err := NewServer(share.NewService(store), assets, logger, Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/", nil)
+	request.Header.Set("X-Forwarded-For", "198.51.100.10, 203.0.113.10")
+	request.RemoteAddr = "10.0.0.1:1234"
+	request.Host = "example.com"
+
+	response := httptest.NewRecorder()
+	server.Echo().ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("index status = %d", response.Code)
+	}
+	if got := logs.String(); !strings.Contains(got, `"client_ip":"203.0.113.10"`) {
+		t.Fatalf("log output missing client_ip: %s", got)
+	}
+}
+
 func TestAdminListsAndSetsSharePassword(t *testing.T) {
 	handler := testEchoWithConfig(t, Config{AdminPassword: "admin"})
 	created := createShare(t, handler, "session-admin")
@@ -217,6 +324,9 @@ func TestAdminListsAndSetsSharePassword(t *testing.T) {
 	}
 	if !strings.Contains(list.Body.String(), "session-admin") {
 		t.Fatalf("admin list missing session: %s", list.Body.String())
+	}
+	if !strings.Contains(list.Body.String(), `"clientIP":"`) {
+		t.Fatalf("admin list missing clientIP field: %s", list.Body.String())
 	}
 
 	set := requestAuth(t, handler, http.MethodPut, "/api/admin/share/session-admin/password", `{"password":"view"}`, "admin")

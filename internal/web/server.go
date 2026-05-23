@@ -65,6 +65,7 @@ func NewServer(shares *share.Service, assets fs.FS, logger *slog.Logger, config 
 // Echo builds the full Echo application.
 func (s *Server) Echo() *echo.Echo {
 	e := echo.New()
+	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 	e.HideBanner = true
 	e.HidePort = true
 	e.HTTPErrorHandler = errorHandler
@@ -97,7 +98,7 @@ func (s *Server) createShare(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "JSON 格式无效")
 	}
 
-	record, err := s.shares.Create(request.SessionID)
+	record, err := s.shares.Create(request.SessionID, c.RealIP())
 	if err != nil {
 		return serviceError(err)
 	}
@@ -196,6 +197,7 @@ func (s *Server) accessLog(next echo.HandlerFunc) echo.HandlerFunc {
 		s.logger.Info("http request",
 			slog.String("method", c.Request().Method),
 			slog.String("path", c.Request().URL.Path),
+			slog.String("client_ip", c.RealIP()),
 			slog.Int("status", c.Response().Status),
 			slog.Duration("duration", time.Since(start).Round(time.Millisecond)),
 		)
