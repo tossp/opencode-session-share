@@ -11,7 +11,7 @@ COPY frontend ./frontend
 RUN pnpm --dir frontend install --frozen-lockfile
 RUN pnpm --dir frontend build
 
-FROM golang:1.26-alpine AS builder
+FROM golang:1.26.3-alpine AS builder
 
 WORKDIR /src
 
