@@ -10,7 +10,7 @@
 
 <script lang="ts">
   import { Badge } from '../../shared/components';
-  import { MarkdownBlock, PatchPart, ReasoningPart, StepFinishBlock, ToolCallCard } from './components';
+  import { MarkdownBlock, PatchPart, ReasoningPart, StepFinishBlock, ToolCallCard, UnknownPart } from './components';
   import { sectionID } from './layout';
 
   let { turns, title, shareID }: ShareTimelineProps = $props();
@@ -55,6 +55,8 @@
                 <PatchPart part={{ files: block.files }} patch={block.patch} />
               {:else if block.kind === 'finish'}
                 <StepFinishBlock part={block.part} />
+              {:else if block.kind === 'unknown'}
+                <UnknownPart part={block.part} />
               {/if}
             {/each}
           </div>
