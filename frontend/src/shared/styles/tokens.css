@@ -1,0 +1,26 @@
+:root {
+  --oc-color-canvas: #f4f7fb;
+  --oc-color-surface: #ffffff;
+  --oc-color-surface-muted: #f8fafc;
+  --oc-color-surface-strong: #0f172a;
+  --oc-color-text: #1e293b;
+  --oc-color-text-muted: #64748b;
+  --oc-color-text-inverse: #e2e8f0;
+  --oc-color-border: #dbe3ef;
+  --oc-color-border-strong: #94a3b8;
+  --oc-color-accent: #0ea5e9;
+  --oc-color-accent-soft: #e0f2fe;
+  --oc-color-success: #16a34a;
+  --oc-color-success-soft: #dcfce7;
+  --oc-color-warning: #d97706;
+  --oc-color-warning-soft: #fef3c7;
+  --oc-color-danger: #dc2626;
+  --oc-color-danger-soft: #fee2e2;
+  --oc-radius-sm: 6px;
+  --oc-radius-md: 10px;
+  --oc-radius-lg: 16px;
+  --oc-shadow-card: 0 16px 40px rgba(15, 23, 42, 0.1);
+  --oc-shadow-drawer: -24px 0 60px rgba(15, 23, 42, 0.22);
+  --oc-font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --oc-transition-fast: 150ms ease;
+}
