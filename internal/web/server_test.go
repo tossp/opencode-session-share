@@ -16,6 +16,26 @@ import (
 	"github.com/tossp/opencode-session-share/internal/share"
 )
 
+const (
+	testAdminCSS = "admin-def456.css"
+	testAdminJS  = "admin-abc123.js"
+	testShareCSS = "share-def456.css"
+	testShareJS  = "share-abc123.js"
+)
+
+func testAssetFS() fstest.MapFS {
+	return fstest.MapFS{
+		"templates/share.html":   {Data: []byte(`<!doctype html><html><head><link rel="icon" href="{{favicon_href}}"><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="{{share_js}}"></script><link rel="stylesheet" href="{{share_css}}"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html":   {Data: []byte(`<!doctype html><html><head><link rel="icon" href="{{favicon_href}}"><script type="module" src="{{admin_js}}"></script><link rel="stylesheet" href="{{admin_css}}"></head><body><div id="app"></div></body></html>`)},
+		"static/manifest.json":   {Data: []byte(`{"src/apps/share/main.ts":{"file":"` + testShareJS + `","css":["` + testShareCSS + `"]},"src/apps/admin/main.ts":{"file":"` + testAdminJS + `","css":["` + testAdminCSS + `"]}}`)},
+		"static/" + testAdminCSS: {Data: []byte(`body {}`)},
+		"static/" + testAdminJS:  {Data: []byte(`console.log('admin');`)},
+		"static/favicon.ico":     {Data: []byte(`ico`)},
+		"static/" + testShareCSS: {Data: []byte(`body { color: #111; }`)},
+		"static/" + testShareJS:  {Data: []byte(`console.log('frontend share');`)},
+	}
+}
+
 func testEcho(t *testing.T) http.Handler {
 	return testEchoWithConfig(t, Config{})
 }
@@ -27,15 +47,7 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = store.Close() })
-	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/share.js"></script><link rel="stylesheet" href="/static/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/admin.js"></script><link rel="stylesheet" href="/static/admin.css"></head><body><div id="app"></div></body></html>`)},
-		"static/admin.css":     {Data: []byte(`body {}`)},
-		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
-		"static/share.js":      {Data: []byte(`console.log('frontend share');`)},
-		"static/share.css":     {Data: []byte(`body { color: #111; }`)},
-	}
-	server, err := NewServer(share.NewService(store), assets, slog.New(slog.NewTextHandler(io.Discard, nil)), config)
+	server, err := NewServer(share.NewService(store), testAssetFS(), slog.New(slog.NewTextHandler(io.Discard, nil)), config)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,17 +160,26 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	if !strings.Contains(bodyText, `window.SHARE_ID = "session-quote.test";`) {
 		t.Fatalf("share page does not contain escaped share id assignment: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/share.js`) {
+	if !strings.Contains(bodyText, `/static/`+testShareJS) {
 		t.Fatalf("share page missing frontend share.js reference: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `type="module" src="/static/share.js"`) {
-		t.Fatalf("share page missing module share.js reference: %s", bodyText)
+	if strings.Contains(bodyText, `/static/share.js`) || strings.Contains(bodyText, `?v=`) {
+		t.Fatalf("share page contains legacy static cache-busting reference: %s", bodyText)
 	}
 	if strings.Contains(bodyText, `/static/frontend`) {
 		t.Fatalf("share page still contains frontend static namespace: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/share.css`) {
+	if !strings.Contains(bodyText, `/static/`+testShareCSS) {
 		t.Fatalf("share page missing frontend share.css reference: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `rel="icon" href="/static/favicon.ico"`) {
+		t.Fatalf("share page missing static favicon reference: %s", bodyText)
+	}
+	if strings.Contains(bodyText, `href="/favicon.ico`) {
+		t.Fatalf("share page still references root favicon: %s", bodyText)
+	}
+	if page.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("share page cache-control = %q, want no-store", page.Header().Get("Cache-Control"))
 	}
 	if !strings.Contains(bodyText, `session-quote.test`) {
 		t.Fatalf("share page does not contain escaped share id: %s", page.Body.String())
@@ -187,6 +208,50 @@ func TestSharePageNoFrontendStaticNamespace(t *testing.T) {
 		if strings.Contains(bodyText, path) {
 			t.Fatalf("share page contains forbidden static asset path: %s", path)
 		}
+	}
+}
+
+func TestHashedStaticAssetServesAsset(t *testing.T) {
+	handler := testEcho(t)
+	response := request(t, handler, http.MethodGet, "/static/"+testShareJS, "")
+	if response.Code != http.StatusOK {
+		t.Fatalf("hashed share.js status = %d, want 200", response.Code)
+	}
+	if body := strings.TrimSpace(response.Body.String()); body != `console.log('frontend share');` {
+		t.Fatalf("hashed share.js body = %q", body)
+	}
+}
+
+func TestStaticFaviconServesAsset(t *testing.T) {
+	handler := testEcho(t)
+	response := request(t, handler, http.MethodGet, "/static/favicon.ico", "")
+	if response.Code != http.StatusOK {
+		t.Fatalf("static favicon status = %d, want 200", response.Code)
+	}
+	if body := strings.TrimSpace(response.Body.String()); body != `ico` {
+		t.Fatalf("static favicon body = %q", body)
+	}
+}
+
+func TestNewServerFailsWhenReferencedStaticAssetMissing(t *testing.T) {
+	store, err := share.OpenStore(filepath.Join(t.TempDir(), "share.db"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+
+	assets := fstest.MapFS{
+		"templates/share.html":   {Data: []byte(`<script type="module" src="{{share_js}}"></script>`)},
+		"templates/admin.html":   {Data: []byte(`<div id="app"></div>`)},
+		"static/manifest.json":   {Data: []byte(`{"src/apps/share/main.ts":{"file":"missing-share.js","css":["` + testShareCSS + `"]},"src/apps/admin/main.ts":{"file":"` + testAdminJS + `","css":["` + testAdminCSS + `"]}}`)},
+		"static/" + testAdminCSS: {Data: []byte(`body {}`)},
+		"static/" + testAdminJS:  {Data: []byte(`console.log('admin');`)},
+		"static/favicon.ico":     {Data: []byte(`ico`)},
+		"static/" + testShareCSS: {Data: []byte(`body { color: #111; }`)},
+	}
+	_, err = NewServer(share.NewService(store), assets, slog.New(slog.NewTextHandler(io.Discard, nil)), Config{})
+	if err == nil {
+		t.Fatal("NewServer succeeded with missing referenced share.js")
 	}
 }
 
@@ -300,15 +365,7 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 
 	service := share.NewService(store)
-	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/share.js"></script><link rel="stylesheet" href="/static/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/admin.js"></script><link rel="stylesheet" href="/static/admin.css"></head><body><div id="app"></div></body></html>`)},
-		"static/admin.css":     {Data: []byte(`body {}`)},
-		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
-		"static/share.js":      {Data: []byte(`console.log('frontend share');`)},
-		"static/share.css":     {Data: []byte(`body { color: #111; }`)},
-	}
-	server, err := NewServer(service, assets, slog.New(slog.NewTextHandler(io.Discard, nil)), Config{})
+	server, err := NewServer(service, testAssetFS(), slog.New(slog.NewTextHandler(io.Discard, nil)), Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,16 +402,8 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 
-	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/share.js"></script><link rel="stylesheet" href="/static/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/admin.js"></script><link rel="stylesheet" href="/static/admin.css"></head><body><div id="app"></div></body></html>`)},
-		"static/admin.css":     {Data: []byte(`body {}`)},
-		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
-		"static/share.js":      {Data: []byte(`console.log('frontend share');`)},
-		"static/share.css":     {Data: []byte(`body { color: #111; }`)},
-	}
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))
-	server, err := NewServer(share.NewService(store), assets, logger, Config{})
+	server, err := NewServer(share.NewService(store), testAssetFS(), logger, Config{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -394,14 +443,23 @@ func TestAdminListsAndSetsSharePassword(t *testing.T) {
 	if !strings.Contains(bodyText, `id="app"`) {
 		t.Fatalf("admin page missing #app mount: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/admin.js`) {
+	if !strings.Contains(bodyText, `/static/`+testAdminJS) {
 		t.Fatalf("admin page missing frontend admin.js reference: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `type="module" src="/static/admin.js"`) {
-		t.Fatalf("admin page missing module admin.js reference: %s", bodyText)
+	if strings.Contains(bodyText, `/static/admin.js`) || strings.Contains(bodyText, `?v=`) {
+		t.Fatalf("admin page contains legacy static cache-busting reference: %s", bodyText)
 	}
-	if !strings.Contains(bodyText, `/static/admin.css`) {
+	if !strings.Contains(bodyText, `/static/`+testAdminCSS) {
 		t.Fatalf("admin page missing frontend admin.css reference: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `rel="icon" href="/static/favicon.ico"`) {
+		t.Fatalf("admin page missing static favicon reference: %s", bodyText)
+	}
+	if strings.Contains(bodyText, `href="/favicon.ico`) {
+		t.Fatalf("admin page still references root favicon: %s", bodyText)
+	}
+	if page.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("admin page cache-control = %q, want no-store", page.Header().Get("Cache-Control"))
 	}
 	if strings.Contains(bodyText, `/static/frontend`) {
 		t.Fatalf("admin page still contains frontend static namespace: %s", bodyText)

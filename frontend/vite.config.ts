@@ -6,15 +6,16 @@ export default defineConfig({
   build: {
     outDir: '../assets/static',
     emptyOutDir: true,
+    manifest: 'manifest.json',
     rollupOptions: {
       input: {
         share: 'src/apps/share/main.ts',
         admin: 'src/apps/admin/main.ts'
       },
       output: {
-        entryFileNames: '[name].js',
+        entryFileNames: '[name]-[hash].js',
         chunkFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: '[name][extname]'
+        assetFileNames: '[name]-[hash][extname]'
       }
     }
   }

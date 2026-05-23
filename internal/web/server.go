@@ -17,6 +17,8 @@ import (
 	"github.com/tossp/opencode-session-share/internal/share"
 )
 
+const manifestPath = "manifest.json"
+
 // Server exposes the opencode-share Echo application.
 type Server struct {
 	shares               *share.Service
@@ -48,18 +50,119 @@ func NewServer(shares *share.Service, assets fs.FS, logger *slog.Logger, config 
 	if err != nil {
 		return nil, err
 	}
+	assetPaths, err := loadAssetPaths(staticFS)
+	if err != nil {
+		return nil, err
+	}
+	shareTemplateText := renderStaticAssets(string(shareTemplate), assetPaths)
+	adminTemplateText := renderStaticAssets(string(adminTemplate), assetPaths)
 	if logger == nil {
 		logger = slog.Default()
 	}
 	return &Server{
 		shares:               shares,
-		shareTemplate:        string(shareTemplate),
-		adminTemplate:        string(adminTemplate),
+		shareTemplate:        shareTemplateText,
+		adminTemplate:        adminTemplateText,
 		logger:               logger,
 		staticFS:             staticFS,
 		adminPassword:        config.AdminPassword,
 		defaultSharePassword: config.DefaultSharePassword,
 	}, nil
+}
+
+type manifestEntry struct {
+	File string   `json:"file"`
+	CSS  []string `json:"css"`
+}
+
+type staticAssetPaths struct {
+	AdminCSS    string
+	AdminJS     string
+	FaviconHref string
+	ShareCSS    string
+	ShareJS     string
+}
+
+func loadAssetPaths(staticFS fs.FS) (staticAssetPaths, error) {
+	manifest, err := readManifest(staticFS)
+	if err != nil {
+		return staticAssetPaths{}, err
+	}
+
+	share, err := manifestAsset(manifest, "src/apps/share/main.ts")
+	if err != nil {
+		return staticAssetPaths{}, err
+	}
+	admin, err := manifestAsset(manifest, "src/apps/admin/main.ts")
+	if err != nil {
+		return staticAssetPaths{}, err
+	}
+	shareCSS, err := firstCSS(share)
+	if err != nil {
+		return staticAssetPaths{}, err
+	}
+	adminCSS, err := firstCSS(admin)
+	if err != nil {
+		return staticAssetPaths{}, err
+	}
+	for _, path := range []string{share.File, shareCSS, admin.File, adminCSS, "favicon.ico"} {
+		if _, err := fs.Stat(staticFS, path); err != nil {
+			return staticAssetPaths{}, err
+		}
+	}
+
+	return staticAssetPaths{
+		AdminCSS:    staticURL(adminCSS),
+		AdminJS:     staticURL(admin.File),
+		FaviconHref: "/static/favicon.ico",
+		ShareCSS:    staticURL(shareCSS),
+		ShareJS:     staticURL(share.File),
+	}, nil
+}
+
+func readManifest(staticFS fs.FS) (map[string]manifestEntry, error) {
+	data, err := fs.ReadFile(staticFS, manifestPath)
+	if err != nil {
+		return nil, err
+	}
+	var manifest map[string]manifestEntry
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, err
+	}
+	return manifest, nil
+}
+
+func manifestAsset(manifest map[string]manifestEntry, key string) (manifestEntry, error) {
+	entry, ok := manifest[key]
+	if !ok || entry.File == "" {
+		return manifestEntry{}, fs.ErrNotExist
+	}
+	return entry, nil
+}
+
+func firstCSS(entry manifestEntry) (string, error) {
+	if len(entry.CSS) == 0 || entry.CSS[0] == "" {
+		return "", fs.ErrNotExist
+	}
+	return entry.CSS[0], nil
+}
+
+func renderStaticAssets(template string, paths staticAssetPaths) string {
+	replacements := map[string]string{
+		"{{admin_css}}":    paths.AdminCSS,
+		"{{admin_js}}":     paths.AdminJS,
+		"{{favicon_href}}": paths.FaviconHref,
+		"{{share_css}}":    paths.ShareCSS,
+		"{{share_js}}":     paths.ShareJS,
+	}
+	for placeholder, value := range replacements {
+		template = strings.ReplaceAll(template, placeholder, value)
+	}
+	return template
+}
+
+func staticURL(path string) string {
+	return "/static/" + strings.TrimPrefix(path, "/")
 }
 
 // Echo builds the full Echo application.
@@ -142,6 +245,7 @@ func (s *Server) getShareData(c echo.Context) error {
 }
 
 func (s *Server) adminPage(c echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "no-store")
 	return c.HTML(http.StatusOK, s.adminTemplate)
 }
 
@@ -187,6 +291,7 @@ func (s *Server) sharePage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "分享不存在")
 	}
 	escaped := html.EscapeString(jsonStringContent(shareID))
+	c.Response().Header().Set("Cache-Control", "no-store")
 	return c.HTML(http.StatusOK, strings.ReplaceAll(s.shareTemplate, "{{share_id}}", escaped))
 }
 
