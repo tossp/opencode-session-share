@@ -45,29 +45,31 @@
 
   async function setPassword(id: string, password: string): Promise<void> {
     busyID = id;
-    const response = await fetch(`/api/admin/share/${encodeURIComponent(id)}/password`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    });
-    if (!response.ok) {
-      throw new Error('设置密码失败');
+    try {
+      const response = await fetch(`/api/admin/share/${encodeURIComponent(id)}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      if (!response.ok) {
+        throw new Error('设置密码失败');
+      }
+      await loadShares();
+      passwords = { ...passwords, [id]: '' };
+    } finally {
+      busyID = '';
     }
-    await loadShares();
-    busyID = '';
   }
 
   function savePassword(id: string): void {
     setPassword(id, passwords[id] ?? '').catch((error: Error) => {
       status = error.message;
-      busyID = '';
     });
   }
 
   function clearPassword(id: string): void {
     setPassword(id, '').catch((error: Error) => {
       status = error.message;
-      busyID = '';
     });
   }
 </script>

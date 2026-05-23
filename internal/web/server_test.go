@@ -28,8 +28,8 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 	}
 	t.Cleanup(func() { _ = store.Close() })
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div><script type="module" src="/static/frontend/admin.js"></script></body></html>`)},
+		"templates/share.html":      {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html":      {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/frontend/admin.js"></script><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div></body></html>`)},
 		"static/frontend/admin.css": {Data: []byte(`body {}`)},
 		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
@@ -276,8 +276,8 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 
 	service := share.NewService(store)
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div><script type="module" src="/static/frontend/admin.js"></script></body></html>`)},
+		"templates/share.html":      {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html":      {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/frontend/admin.js"></script><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div></body></html>`)},
 		"static/frontend/admin.css": {Data: []byte(`body {}`)},
 		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
@@ -321,8 +321,8 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 	t.Cleanup(func() { _ = store.Close() })
 
 	assets := fstest.MapFS{
-		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div><script type="module" src="/static/frontend/admin.js"></script></body></html>`)},
+		"templates/share.html":      {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
+		"templates/admin.html":      {Data: []byte(`<!doctype html><html><head><script type="module" src="/static/frontend/admin.js"></script><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div></body></html>`)},
 		"static/frontend/admin.css": {Data: []byte(`body {}`)},
 		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
