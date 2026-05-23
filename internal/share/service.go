@@ -9,8 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-const defaultKeyPrefix = "auto"
-
 const (
 	// MaxSessionIDLength limits user-controlled keys stored in the database.
 	MaxSessionIDLength = 512
@@ -172,8 +170,8 @@ func (s *Service) Sync(id, secret string, incoming []json.RawMessage) error {
 			if !json.Valid(item) {
 				return fmt.Errorf("%w: JSON 数据项无效", ErrInvalidInput)
 			}
-			key := dataKey(item)
-			merged = mergeData(merged, item, key)
+			key, keyed := dataKey(item)
+			merged = mergeData(merged, item, key, keyed)
 		}
 		if dataSize(merged) > MaxShareDataBytes {
 			return fmt.Errorf("%w: 分享数据总量过大", ErrInvalidInput)
@@ -256,9 +254,14 @@ func checkViewPassword(share Share, password, defaultPassword string) error {
 	return nil
 }
 
-func mergeData(current []json.RawMessage, item json.RawMessage, key string) []json.RawMessage {
+func mergeData(current []json.RawMessage, item json.RawMessage, key string, keyed bool) []json.RawMessage {
+	if !keyed {
+		return append(current, append(json.RawMessage(nil), item...))
+	}
+
 	for i, existing := range current {
-		if dataKey(existing) == key {
+		existingKey, existingKeyed := dataKey(existing)
+		if existingKeyed && existingKey == key {
 			current[i] = append(json.RawMessage(nil), item...)
 			return current
 		}
@@ -266,19 +269,15 @@ func mergeData(current []json.RawMessage, item json.RawMessage, key string) []js
 	return append(current, append(json.RawMessage(nil), item...))
 }
 
-func dataKey(data json.RawMessage) string {
+func dataKey(data json.RawMessage) (string, bool) {
 	var object map[string]json.RawMessage
 	if err := json.Unmarshal(data, &object); err != nil {
-		return defaultAutoKey()
+		return "", false
 	}
 
 	var key string
 	if raw, ok := object["_key"]; ok && json.Unmarshal(raw, &key) == nil && key != "" {
-		return key
+		return key, true
 	}
-	return defaultAutoKey()
-}
-
-func defaultAutoKey() string {
-	return defaultKeyPrefix + "/" + uuid.NewString()
+	return "", false
 }
