@@ -4,18 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>opencode-share 管理页</title>
-  <link rel="stylesheet" href="/static/admin.css">
+  <script type="module" src="/static/frontend/admin.js"></script>
+  <link rel="stylesheet" href="/static/frontend/admin.css">
 </head>
 <body>
-<main>
-  <h1>opencode-share 管理页</h1>
-  <p class="muted">将密码留空表示使用默认密码；如果未配置默认密码，则该会话为公开访问。</p>
-  <div id="status" class="muted">正在加载...</div>
-  <table>
-    <thead><tr><th>会话</th><th>条目数</th><th>访问密码</th><th>更新时间</th><th>操作</th></tr></thead>
-    <tbody id="shares"></tbody>
-  </table>
-</main>
-<script src="/static/admin.js" defer></script>
+<div id="app"></div>
 </body>
 </html>

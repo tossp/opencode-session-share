@@ -29,9 +29,9 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 	t.Cleanup(func() { _ = store.Close() })
 	assets := fstest.MapFS{
 		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
-		"static/admin.css":     {Data: []byte(`body {}`)},
-		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div><script type="module" src="/static/frontend/admin.js"></script></body></html>`)},
+		"static/frontend/admin.css": {Data: []byte(`body {}`)},
+		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
 		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
@@ -277,9 +277,9 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 	service := share.NewService(store)
 	assets := fstest.MapFS{
 		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
-		"static/admin.css":     {Data: []byte(`body {}`)},
-		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div><script type="module" src="/static/frontend/admin.js"></script></body></html>`)},
+		"static/frontend/admin.css": {Data: []byte(`body {}`)},
+		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
 		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
@@ -322,9 +322,9 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 
 	assets := fstest.MapFS{
 		"templates/share.html": {Data: []byte(`<!doctype html><html><head><script>window.SHARE_ID = "{{share_id}}";</script><script type="module" src="/static/frontend/share.js"></script><link rel="stylesheet" href="/static/frontend/share.css"></head><body>{{share_id}}</body></html>`)},
-		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
-		"static/admin.css":     {Data: []byte(`body {}`)},
-		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
+		"templates/admin.html": {Data: []byte(`<!doctype html><html><head><link rel="stylesheet" href="/static/frontend/admin.css"></head><body><div id="app"></div><script type="module" src="/static/frontend/admin.js"></script></body></html>`)},
+		"static/frontend/admin.css": {Data: []byte(`body {}`)},
+		"static/frontend/admin.js":  {Data: []byte(`console.log('admin');`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
 		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
@@ -360,6 +360,26 @@ func TestAdminListsAndSetsSharePassword(t *testing.T) {
 	wrongAuth := requestAuth(t, handler, http.MethodGet, "/admin", "", "wrong")
 	if wrongAuth.Code != http.StatusUnauthorized {
 		t.Fatalf("admin wrong auth = %d, want 401", wrongAuth.Code)
+	}
+	page := requestAuth(t, handler, http.MethodGet, "/admin", "", "admin")
+	if page.Code != http.StatusOK {
+		t.Fatalf("admin page status = %d", page.Code)
+	}
+	bodyText := page.Body.String()
+	if !strings.Contains(bodyText, `id="app"`) {
+		t.Fatalf("admin page missing #app mount: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `/static/frontend/admin.js`) {
+		t.Fatalf("admin page missing frontend admin.js reference: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `type="module" src="/static/frontend/admin.js"`) {
+		t.Fatalf("admin page missing module admin.js reference: %s", bodyText)
+	}
+	if !strings.Contains(bodyText, `/static/frontend/admin.css`) {
+		t.Fatalf("admin page missing frontend admin.css reference: %s", bodyText)
+	}
+	if strings.Contains(bodyText, `/static/admin.js`) || strings.Contains(bodyText, `/static/admin.css`) {
+		t.Fatalf("admin page still contains legacy admin asset reference: %s", bodyText)
 	}
 
 	list := requestAuth(t, handler, http.MethodGet, "/api/admin/shares", "", "admin")
