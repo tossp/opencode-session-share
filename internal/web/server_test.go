@@ -32,8 +32,6 @@ func testEchoWithConfig(t *testing.T, config Config) http.Handler {
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
-		"static/share.js":      {Data: []byte(`console.log('test');`)},
-		"static/share.css":     {Data: []byte(`body { color: #000; }`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
 		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
@@ -282,8 +280,6 @@ func TestCreateSharePersistsClientIP(t *testing.T) {
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
-		"static/share.js":      {Data: []byte(`console.log('test');`)},
-		"static/share.css":     {Data: []byte(`body { color: #000; }`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
 		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
@@ -329,8 +325,6 @@ func TestAccessLogIncludesClientIP(t *testing.T) {
 		"templates/admin.html": {Data: []byte(`<!doctype html><html><body>admin</body></html>`)},
 		"static/admin.css":     {Data: []byte(`body {}`)},
 		"static/admin.js":      {Data: []byte(`console.log('admin');`)},
-		"static/share.js":      {Data: []byte(`console.log('test');`)},
-		"static/share.css":     {Data: []byte(`body { color: #000; }`)},
 		"static/frontend/share.js":  {Data: []byte(`console.log('frontend share');`)},
 		"static/frontend/share.css": {Data: []byte(`body { color: #111; }`)},
 	}
