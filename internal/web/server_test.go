@@ -168,6 +168,32 @@ func TestSharePageEscapesScriptContext(t *testing.T) {
 	}
 }
 
+// Test that share page does not contain root static asset paths
+func TestSharePageNoRootStaticAssets(t *testing.T) {
+	handler := testEcho(t)
+	created := createShare(t, handler, "session-static-test")
+	page := request(t, handler, http.MethodGet, "/share/"+created.ID, "")
+	if page.Code != http.StatusOK {
+		t.Fatalf("share page status = %d", page.Code)
+	}
+
+	bodyText := page.Body.String()
+	forbiddenPaths := []string{
+		"/static/favicon",
+		"/static/site.webmanifest",
+		"/static/social-share",
+		"/static/web-app-manifest",
+		"/static/apple-touch-icon",
+		"/static/vendor",
+	}
+
+	for _, path := range forbiddenPaths {
+		if strings.Contains(bodyText, path) {
+			t.Fatalf("share page contains forbidden static asset path: %s", path)
+		}
+	}
+}
+
 func TestSharePageAndDataEndpointConsistency(t *testing.T) {
 	handler := testEchoWithConfig(t, Config{DefaultSharePassword: "default"})
 	created := createShare(t, handler, "session-consistency")
@@ -425,6 +451,32 @@ func TestAdminDisabledWithoutPassword(t *testing.T) {
 	admin := request(t, handler, http.MethodGet, "/admin", "")
 	if admin.Code != http.StatusServiceUnavailable {
 		t.Fatalf("admin disabled status = %d, want 503", admin.Code)
+	}
+}
+
+// Test that admin page does not contain root static asset paths
+func TestAdminPageNoRootStaticAssets(t *testing.T) {
+	handler := testEchoWithConfig(t, Config{AdminPassword: "admin"})
+	createShare(t, handler, "session-admin-static-test")
+	page := requestAuth(t, handler, http.MethodGet, "/admin", "", "admin")
+	if page.Code != http.StatusOK {
+		t.Fatalf("admin page status = %d", page.Code)
+	}
+
+	bodyText := page.Body.String()
+	forbiddenPaths := []string{
+		"/static/favicon",
+		"/static/site.webmanifest",
+		"/static/social-share",
+		"/static/web-app-manifest",
+		"/static/apple-touch-icon",
+		"/static/vendor",
+	}
+
+	for _, path := range forbiddenPaths {
+		if strings.Contains(bodyText, path) {
+			t.Fatalf("admin page contains forbidden static asset path: %s", path)
+		}
 	}
 }
 
