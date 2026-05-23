@@ -21,7 +21,7 @@
 </script>
 
 <script lang="ts">
-  import { Badge } from '../../../shared/components';
+  import { Badge, Icon } from '../../../shared/components';
 
   let { part }: StepFinishBlockProps = $props();
   const labels = $derived(
@@ -39,7 +39,7 @@
 </script>
 
 <section class="step-finish">
-  <div class="step-finish__marker">✓</div>
+  <div class="step-finish__marker"><Icon name="check" /></div>
   <div class="step-finish__content">
     <div class="step-finish__header">
       <strong>步骤完成</strong>

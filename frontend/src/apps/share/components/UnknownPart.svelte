@@ -7,7 +7,7 @@
 </script>
 
 <script lang="ts">
-  import { Callout, CodeBlock } from '../../../shared/components';
+  import { Callout, CodeBlock, Icon } from '../../../shared/components';
   import { safeJson } from './markdown';
 
   let { part }: UnknownPartProps = $props();
@@ -16,5 +16,17 @@
 </script>
 
 <Callout tone="warning" title={`未知片段：${typeLabel}`}>
+  <div class="unknown-part__label"><Icon name="warning" /> Raw part</div>
   <CodeBlock code={raw} language="json" wrap maxHeight="360px" />
 </Callout>
+
+<style>
+  .unknown-part__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+</style>

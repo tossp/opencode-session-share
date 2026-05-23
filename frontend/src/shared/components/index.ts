@@ -3,6 +3,7 @@ export { default as Callout } from './Callout.svelte';
 export { default as CodeBlock } from './CodeBlock.svelte';
 export { default as Collapse } from './Collapse.svelte';
 export { default as Drawer } from './Drawer.svelte';
+export { default as Icon } from './Icon.svelte';
 
 export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger';
 export type BadgeSize = 'sm' | 'md';

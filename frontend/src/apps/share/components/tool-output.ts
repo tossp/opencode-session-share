@@ -28,6 +28,15 @@ export interface ToolOutputSummary {
   isLong: boolean;
 }
 
+export interface AgentTaskSummary {
+  kind: 'launch' | 'result' | 'status';
+  taskID?: string;
+  sessionID?: string;
+  description?: string;
+  agent?: string;
+  status?: string;
+}
+
 export const isLongToolOutput = (output: string) =>
   output.split('\n').length > longOutputLineLimit || output.length > longOutputCharLimit;
 
@@ -105,3 +114,27 @@ export const toolStatusTone = (status: string) => {
   }
   return 'neutral' as const;
 };
+
+export const summarizeAgentTask = (part: ToolPartLike, output: string): AgentTaskSummary | undefined => {
+  const tool = part.tool?.toLowerCase() ?? '';
+  if (tool !== 'task' && tool !== 'background_output' && tool !== 'call_omo_agent') {
+    return undefined;
+  }
+
+  const input = part.state?.input;
+  const description = typeof input === 'object' && input !== null ? valueFromRecord(input, 'description') : undefined;
+  const taskID = firstMatch(output, /Background Task ID:\s*([^\s]+)/) ?? firstMatch(output, /Task ID:\s*`?([^`\s]+)/);
+  const sessionID = firstMatch(output, /session_id:\s*([^\s<]+)/) ?? firstMatch(output, /Session ID:\s*`?([^`\s]+)/);
+  const agent = firstMatch(output, /Agent:\s*([^\n]+)/);
+  const status = firstMatch(output, /Status:\s*([^\n]+)/)?.replace(/[*`]/g, '').trim();
+
+  if (tool === 'task') {
+    return { kind: 'launch', taskID, sessionID, description, agent, status };
+  }
+
+  return { kind: output.includes('Task Result') ? 'result' : 'status', taskID, sessionID, description, agent, status };
+};
+
+function firstMatch(value: string, pattern: RegExp): string | undefined {
+  return value.match(pattern)?.[1]?.trim();
+}

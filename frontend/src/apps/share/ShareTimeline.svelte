@@ -9,7 +9,7 @@
 </script>
 
 <script lang="ts">
-  import { Badge } from '../../shared/components';
+  import { Badge, Icon } from '../../shared/components';
   import { MarkdownBlock, PatchPart, ReasoningPart, StepFinishBlock, ToolCallCard, UnknownPart } from './components';
   import { sectionID } from './layout';
 
@@ -19,7 +19,7 @@
 <section class="share-flow" aria-labelledby="share-title">
   <header class="hero-card">
     <div>
-      <p class="eyebrow">OpenCode Session Share</p>
+      <p class="eyebrow"><Icon name="agent" size={14} /> OpenCode Session Share</p>
       <h1 id="share-title">{title}</h1>
       <p class="hero-card__copy">左侧优先呈现会话流；中栏提供分节跳转；右侧只保留可读摘要，方便快速判断会话规模与风险。</p>
     </div>
@@ -37,7 +37,7 @@
           <header class="turn-card__header">
             <div>
               <p>{turn.actor} · {turn.time}</p>
-              <h2>{turn.title}</h2>
+              <h2><Icon name={turn.actor === '用户' ? 'user' : 'agent'} size={18} /> {turn.title}</h2>
             </div>
             <Badge tone="accent" size="sm">{turn.category}</Badge>
           </header>
@@ -77,9 +77,9 @@
   .hero-card,
   .turn-card {
     border: 1px solid rgba(100, 116, 139, 0.2);
-    border-radius: 28px;
-    background: rgba(255, 255, 255, 0.76);
-    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.1);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 12px 38px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(18px);
   }
 
@@ -88,11 +88,14 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 24px;
-    padding: clamp(24px, 4vw, 42px);
+    padding: clamp(22px, 3vw, 34px);
     overflow: hidden;
   }
 
   .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin: 0 0 10px;
     color: #0f766e;
     font-size: 0.72rem;
@@ -111,17 +114,18 @@
     max-width: 780px;
     margin-bottom: 14px;
     color: #0f172a;
-    font-size: clamp(2.4rem, 7vw, 5.6rem);
-    line-height: 0.92;
-    letter-spacing: -0.08em;
+    font-size: clamp(1.8rem, 4vw, 3.8rem);
+    line-height: 1.02;
+    letter-spacing: -0.06em;
+    overflow-wrap: anywhere;
   }
 
   .hero-card__copy {
     max-width: 720px;
     margin-bottom: 0;
     color: #475569;
-    font-size: 1.05rem;
-    line-height: 1.75;
+    font-size: 0.98rem;
+    line-height: 1.65;
   }
 
   .session-chip {
@@ -151,7 +155,7 @@
   .timeline {
     position: relative;
     display: grid;
-    gap: 26px;
+    gap: 18px;
     margin-top: 28px;
   }
 
@@ -166,17 +170,17 @@
   .turn-card {
     position: relative;
     display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    gap: 18px;
-    padding: 22px;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px;
     scroll-margin-top: 24px;
   }
 
   .turn-card__marker {
     z-index: 1;
     display: grid;
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 34px;
     place-items: center;
     border: 3px solid #ecfeff;
     border-radius: 999px;
@@ -190,6 +194,7 @@
     display: grid;
     gap: 16px;
     min-width: 0;
+    max-width: 100%;
   }
 
   .turn-card__header {
@@ -213,11 +218,15 @@
   }
 
   .turn-card__header h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 0;
     color: #111827;
-    font-size: clamp(1.4rem, 3vw, 2.05rem);
-    line-height: 1.05;
+    font-size: clamp(1.15rem, 2vw, 1.55rem);
+    line-height: 1.18;
     letter-spacing: -0.04em;
+    overflow-wrap: anywhere;
   }
 
   .turn-card__summary {
@@ -237,13 +246,12 @@
     }
 
     .turn-card {
-      grid-template-columns: 34px minmax(0, 1fr);
+      grid-template-columns: 1fr;
       padding: 16px;
     }
 
     .turn-card__marker {
-      width: 32px;
-      height: 32px;
+      display: none;
     }
 
     .timeline::before {

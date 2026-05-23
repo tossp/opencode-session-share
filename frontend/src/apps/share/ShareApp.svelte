@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { Icon } from '../../shared/components';
   import { loadShareState } from '../../shared/api/share';
   import { RawJsonDrawer } from './components';
   import ShareMetaSidebar from './ShareMetaSidebar.svelte';
@@ -51,10 +52,10 @@
 
     <nav class="section-rail" aria-label="分节导航">
       <div class="section-rail__sticky">
-        <span class="rail-label">Sections</span>
+        <span class="rail-label">会话节点</span>
         {#each appState.view.navSections as section}
           <a href={`#${section.id}`} aria-label={`跳转到 ${section.label}`}>
-            <span class="rail-dot" aria-hidden="true"></span>
+            <span class="rail-dot" aria-hidden="true"><Icon name="chevron" size={12} /></span>
             <span class="rail-copy">
               <strong>{section.label}</strong>
               <small>{section.meta}</small>
@@ -111,8 +112,8 @@
   :global(body) {
     margin: 0;
     background:
-      radial-gradient(circle at 8% 0%, rgba(14, 165, 233, 0.16), transparent 30rem),
-      linear-gradient(135deg, #f8fafc 0%, #eef5f8 48%, #f8fafc 100%);
+      radial-gradient(circle at 8% 0%, rgba(14, 165, 233, 0.1), transparent 30rem),
+      linear-gradient(135deg, #f8fafc 0%, #f1f5f9 48%, #f8fafc 100%);
     color: #172033;
     font-family: Avenir Next, Trebuchet MS, Verdana, sans-serif;
   }
@@ -120,8 +121,10 @@
   .share-shell {
     position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 88px minmax(280px, 340px);
+    grid-template-columns: minmax(0, 1fr) 96px minmax(280px, 340px);
     gap: 0;
+    width: min(100%, 1800px);
+    margin-inline: auto;
     min-height: 100vh;
   }
 
@@ -149,13 +152,24 @@
   }
 
   .section-rail {
-    border-inline: 1px solid rgba(100, 116, 139, 0.2);
-    background: rgba(15, 23, 42, 0.035);
+    position: relative;
+    border-inline: 1px solid rgba(100, 116, 139, 0.18);
+    background: linear-gradient(90deg, rgba(15, 23, 42, 0.018), rgba(15, 23, 42, 0.045));
+  }
+
+  .section-rail::before {
+    position: absolute;
+    inset: 0 auto 0 50%;
+    width: 2px;
+    background: linear-gradient(transparent, rgba(20, 184, 166, 0.5), transparent);
+    content: '';
+    transform: translateX(-50%);
   }
 
   .section-rail__sticky {
     position: sticky;
     top: 0;
+    z-index: 1;
     display: grid;
     gap: 14px;
     padding: 36px 16px;
@@ -179,13 +193,23 @@
     text-decoration: none;
   }
 
+  .section-rail a:hover .rail-dot,
+  .section-rail a:focus-visible .rail-dot {
+    background: #0ea5e9;
+    color: #fff;
+  }
+
   .rail-dot {
     width: 10px;
     height: 10px;
-    margin-top: 5px;
+    display: grid;
+    place-items: center;
+    margin-top: 3px;
     border-radius: 999px;
-    background: #14b8a6;
-    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.12);
+    background: #f8fafc;
+    color: #0f766e;
+    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.12), inset 0 0 0 1px rgba(20, 184, 166, 0.32);
+    transition: background var(--oc-transition-fast, 150ms ease), color var(--oc-transition-fast, 150ms ease);
   }
 
   .rail-copy {
@@ -261,7 +285,7 @@
 
   @media (min-width: 1180px) {
     .share-shell {
-      grid-template-columns: minmax(0, 1fr) 220px minmax(300px, 360px);
+      grid-template-columns: minmax(0, 1fr) 240px minmax(300px, 360px);
     }
 
     .rail-copy {
@@ -285,6 +309,10 @@
   @media (max-width: 960px) {
     .share-shell {
       grid-template-columns: minmax(0, 1fr) 72px;
+    }
+
+    .share-shell > :global(.meta-sidebar) {
+      display: none;
     }
   }
 
