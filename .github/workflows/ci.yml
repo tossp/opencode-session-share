@@ -34,8 +34,8 @@ jobs:
         with:
           version: latest
 
-  go:
-    name: Go test and build
+  checks:
+    name: Go checks
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -61,11 +61,65 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+  test:
+    name: Go test
+    runs-on: ubuntu-latest
+    needs:
+      - checks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
       - name: Run tests
         run: go test ./...
 
+  race:
+    name: Go race test
+    runs-on: ubuntu-latest
+    needs:
+      - checks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
+
       - name: Run race tests
         run: go test -race ./...
+
+  build:
+    name: Go build
+    runs-on: ubuntu-latest
+    needs:
+      - checks
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Download dependencies
+        run: go mod download
 
       - name: Build binary
         run: go build ./cmd/server
@@ -94,9 +148,11 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - lint
-      - go
+      - checks
+      - test
+      - race
+      - build
       - govulncheck
-      - codeql
     steps:
       - name: Checkout
         uses: actions/checkout@v4
