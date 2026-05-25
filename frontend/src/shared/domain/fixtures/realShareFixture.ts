@@ -32,7 +32,7 @@ export const realShareFixture = [
         },
       },
       share: {
-        url: 'https://ocss.tossp.com/share/ses_1acff78b2ffeecr9dduoDyoRXA',
+        url: 'https://example.invalid/share/fixture',
       },
       time: {
         created: 1763243320000,

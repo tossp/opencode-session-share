@@ -1,5 +1,3 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { realShareFixture } from './fixtures/realShareFixture';
 import { buildOpenCodeDisplayPlan } from './opencode-display';
@@ -38,45 +36,18 @@ describe('buildOpenCodeDisplayPlan', () => {
     ]);
   });
 
-  it('validates the full cached raw payload without embedding it in source', () => {
-    const rawPath = resolve(process.cwd(), '..', 'tmp', 'ses_1acff78b2ffeecr9dduoDyoRXA.raw.json');
-    const items = JSON.parse(readFileSync(rawPath, 'utf8')) as RawShareItem[];
-    const document = convertOpenCodeShare(items, { rootSessionID: 'ses_1acff78b2ffeecr9dduoDyoRXA' });
+  it('validates the committed fixture without depending on local tmp payloads', () => {
+    const document = convertOpenCodeShare(realShareFixture, { rootSessionID: 'ses_1acff78b2ffeecr9dduoDyoRXA' });
     const plan = buildOpenCodeDisplayPlan(document);
 
-    expect(document.rawLog.entries).toHaveLength(2244);
-    expect(document.summary.kindCounts).toMatchObject({ session: 141, message: 472, tool: 596, session_diff: 138, model: 141 });
-    expect(rawModelCounts(items)).toEqual({ 'aio/gpt-5.4': 2, 'aio/gpt-5.5': 470 });
-    expect(document.summary.modelCounts).toEqual({ 'aio/gpt-5.4': 2, 'aio/gpt-5.5': 203 });
-    expect(plan.debugRawRefs).toHaveLength(2244);
-    expect(plan.toolGroups.length).toBeGreaterThan(100);
-    expect(plan.fileChanges.length).toBeGreaterThan(0);
+    expect(document.rawLog.entries).toHaveLength(realShareFixture.length);
+    expect(document.summary.kindCounts).toMatchObject({ session: 2, message: 3, session_diff: 1, model: 1 });
+    expect(document.summary.modelCounts).toEqual({});
+    expect(plan.debugRawRefs).toHaveLength(realShareFixture.length);
+    expect(plan.toolGroups).toEqual([expect.objectContaining({ tools: ['bash'], statuses: ['completed'] })]);
+    expect(plan.fileChanges.map((change) => change.file)).toEqual([
+      'frontend/src/shared/domain/fixtures/README.md',
+      'frontend/src/shared/domain/fixtures/realShareFixture.ts',
+    ]);
   });
 });
-
-function rawModelCounts(items: readonly RawShareItem[]): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const item of items) {
-    if (item.type !== 'message' || !isRecord(item.data)) continue;
-    const model = isRecord(item.data.model) ? item.data.model : undefined;
-    const providerID = stringValue(item.data.providerID) ?? stringValue(model?.providerID);
-    const modelID = stringValue(item.data.modelID) ?? stringValue(model?.modelID);
-    if (providerID === undefined && modelID === undefined) continue;
-    const label = `${providerID ?? ''}/${modelID ?? ''}`;
-    counts[label] = (counts[label] ?? 0) + 1;
-  }
-  return Object.entries(counts)
-    .sort(([left], [right]) => left.localeCompare(right))
-    .reduce<Record<string, number>>((result, [label, value]) => {
-      result[label] = value;
-      return result;
-    }, {});
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function stringValue(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined;
-}
