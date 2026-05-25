@@ -1,67 +1,80 @@
 <script module lang="ts">
-  import type { ShareMetaSummary } from './layout';
+  import type { NormalizationWarning, NormalizedShareData } from '../../shared/domain/normalize';
+  import type { ShareMetaSummary, ShareRawSourceDebug } from './layout';
+  import type { ReaderViewModel } from './reader-view-model';
 
   export interface ShareMetaSidebarProps {
     meta: ShareMetaSummary;
+    reader?: ReaderViewModel;
+    warnings?: NormalizationWarning[];
+    normalized?: NormalizedShareData;
+    rawSources?: ShareRawSourceDebug;
+    debugEnabled?: boolean;
   }
 </script>
 
 <script lang="ts">
-  let { meta }: ShareMetaSidebarProps = $props();
+  import ReaderSidePanel from './ReaderSidePanel.svelte';
+
+  let { meta, reader, warnings = [], normalized, rawSources, debugEnabled = false }: ShareMetaSidebarProps = $props();
 </script>
 
-<aside class="meta-sidebar" aria-label="会话摘要">
-  <div class="meta-sidebar__sticky">
-    <section class="meta-panel meta-panel--hero">
-      <p class="eyebrow">Session Meta</p>
-      <h2>{meta.title}</h2>
-      <dl class="meta-facts">
-        <div><dt>Model</dt><dd>{meta.model}</dd></div>
-        <div><dt>Cost</dt><dd>{meta.cost}</dd></div>
-        <div><dt>Tokens</dt><dd>{meta.tokens}</dd></div>
-        <div><dt>Duration</dt><dd>{meta.duration}</dd></div>
-      </dl>
-    </section>
+{#if reader !== undefined}
+  <ReaderSidePanel {meta} {reader} {warnings} {normalized} {rawSources} {debugEnabled} />
+{:else}
+  <aside class="meta-sidebar" aria-label="会话摘要">
+    <div class="meta-sidebar__sticky">
+      <section class="meta-panel meta-panel--hero">
+        <p class="eyebrow">Session Meta</p>
+        <h2>{meta.title}</h2>
+        <dl class="meta-facts">
+          <div><dt>Model</dt><dd>{meta.model}</dd></div>
+          <div><dt>Cost</dt><dd>{meta.cost}</dd></div>
+          <div><dt>Tokens</dt><dd>{meta.tokens}</dd></div>
+          <div><dt>Duration</dt><dd>{meta.duration}</dd></div>
+        </dl>
+      </section>
 
-    <section class="meta-panel">
-      <h3>Counts</h3>
-      <div class="count-grid">
-        {#each meta.counts as item}
-          <div><strong>{item.value}</strong><span>{item.label}</span></div>
-        {/each}
-      </div>
-    </section>
+      <section class="meta-panel">
+        <h3>Counts</h3>
+        <div class="count-grid">
+          {#each meta.counts as item}
+            <div><strong>{item.value}</strong><span>{item.label}</span></div>
+          {/each}
+        </div>
+      </section>
 
-    <section class="meta-panel">
-      <h3>Activity summary</h3>
-      <ul class="meta-list">
-        {#each meta.activity as item}<li>{item}</li>{/each}
-      </ul>
-    </section>
-
-    <section class="meta-panel">
-      <h3>Files changed</h3>
-      <ul class="file-list">
-        {#each meta.filesChanged as file}<li>{file}</li>{/each}
-      </ul>
-    </section>
-
-    <section class="meta-panel meta-panel--split">
-      <div>
-        <h3>Tool counts</h3>
-        <ul class="compact-list">
-          {#each meta.toolCounts as item}<li><span>{item.label}</span><strong>{item.value}</strong></li>{/each}
+      <section class="meta-panel">
+        <h3>Activity summary</h3>
+        <ul class="meta-list">
+          {#each meta.activity as item}<li>{item}</li>{/each}
         </ul>
-      </div>
-      <div>
-        <h3>Error counts</h3>
-        <ul class="compact-list">
-          {#each meta.errorCounts as item}<li><span>{item.label}</span><strong>{item.value}</strong></li>{/each}
+      </section>
+
+      <section class="meta-panel">
+        <h3>Files changed</h3>
+        <ul class="file-list">
+          {#each meta.filesChanged as file}<li>{file}</li>{/each}
         </ul>
-      </div>
-    </section>
-  </div>
-</aside>
+      </section>
+
+      <section class="meta-panel meta-panel--split">
+        <div>
+          <h3>Tool counts</h3>
+          <ul class="compact-list">
+            {#each meta.toolCounts as item}<li><span>{item.label}</span><strong>{item.value}</strong></li>{/each}
+          </ul>
+        </div>
+        <div>
+          <h3>Error counts</h3>
+          <ul class="compact-list">
+            {#each meta.errorCounts as item}<li><span>{item.label}</span><strong>{item.value}</strong></li>{/each}
+          </ul>
+        </div>
+      </section>
+    </div>
+  </aside>
+{/if}
 
 <style>
   @import '../../shared/styles/tokens.css';
