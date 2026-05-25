@@ -1,25 +1,8 @@
 <script module lang="ts">
-  interface ToolCardState {
-    status?: string;
-    title?: string;
-    input?: string | Record<string, unknown>;
-    output?: string;
-    time?: {
-      start?: number;
-      end?: number;
-    };
-    metadata?: Record<string, unknown>;
-    [key: string]: unknown;
-  }
-
-  interface ToolCardPart {
-    tool?: string;
-    callID?: string;
-    state?: ToolCardState;
-  }
+  import type { ToolPart, ToolCallPart, ToolState } from '../../../shared/domain/types';
 
   export interface ToolCallCardProps {
-    part: ToolCardPart;
+    part: ToolPart | ToolCallPart;
   }
 </script>
 
@@ -31,7 +14,7 @@
   let { part }: ToolCallCardProps = $props();
   let drawerOpen = $state(false);
 
-  const toolState = $derived<ToolCardState>(part.state ?? {});
+  const toolState = $derived<ToolState>(part.state ?? {});
   const status = $derived(toolState.status?.trim() || 'unknown');
   const name = $derived(toolDisplayName(part, toolState));
   const title = $derived(toolTitle(toolState));

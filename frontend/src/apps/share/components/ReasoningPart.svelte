@@ -1,10 +1,8 @@
 <script module lang="ts">
-  interface ReasoningPartData {
-    text?: string;
-  }
+  import type { ReasoningPart as ReasoningPartType } from '../../../shared/domain/types';
 
   export interface ReasoningPartProps {
-    part: ReasoningPartData;
+    part: Pick<ReasoningPartType, 'text'>;
     open?: boolean;
   }
 </script>

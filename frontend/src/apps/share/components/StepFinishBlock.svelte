@@ -1,22 +1,8 @@
 <script module lang="ts">
-  interface StepFinishPartData {
-    snapshot?: string;
-    reason?: string;
-    tokens?: {
-      input?: number;
-      output?: number;
-      reasoning?: number;
-      total?: number;
-      cache?: {
-        read?: number;
-        write?: number;
-      };
-    };
-    cost?: number;
-  }
+  import type { StepFinishPart } from '../../../shared/domain/types';
 
   export interface StepFinishBlockProps {
-    part: StepFinishPartData;
+    part: StepFinishPart;
   }
 </script>
 
