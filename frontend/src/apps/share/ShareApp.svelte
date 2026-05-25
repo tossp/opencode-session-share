@@ -1,10 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { Icon } from '../../shared/components';
   import { loadShareState } from '../../shared/api/share';
   import { RawJsonDrawer } from './components';
-  import ShareMetaSidebar from './ShareMetaSidebar.svelte';
-  import ShareTimeline from './ShareTimeline.svelte';
+  import ReaderShell from './ReaderShell.svelte';
   import { resolveShareID, shareViewStateFromLoadState, type ShareAppViewState } from './layout';
 
   const shareID = resolveShareID();
@@ -34,6 +32,10 @@
     event.preventDefault();
     void loadData(password);
   }
+
+  function openDebugDrawer(): void {
+    debugOpen = true;
+  }
 </script>
 
 <svelte:head>
@@ -41,32 +43,7 @@
 </svelte:head>
 
 {#if appState.status === 'ready'}
-  <main class="share-shell">
-    <div class="top-actions" aria-label="页面操作">
-      {#if debugEnabled}
-        <button type="button" onclick={() => (debugOpen = true)}>更多</button>
-      {/if}
-    </div>
-
-    <ShareTimeline turns={appState.view.turns} title={appState.view.meta.title} {shareID} />
-
-    <nav class="section-rail" aria-label="分节导航">
-      <div class="section-rail__sticky">
-        <span class="rail-label">会话节点</span>
-        {#each appState.view.navSections as section}
-          <a href={`#${section.id}`} aria-label={`跳转到 ${section.label}`}>
-            <span class="rail-dot" aria-hidden="true"><Icon name="chevron" size={12} /></span>
-            <span class="rail-copy">
-              <strong>{section.label}</strong>
-              <small>{section.meta}</small>
-            </span>
-          </a>
-        {/each}
-      </div>
-    </nav>
-
-    <ShareMetaSidebar meta={appState.view.meta} />
-  </main>
+  <ReaderShell view={appState.view} {shareID} {debugEnabled} onOpenDebug={openDebugDrawer} />
 
   {#if debugEnabled}
     <RawJsonDrawer bind:open={debugOpen} title="调试数据" value={appState.view.normalized} />
@@ -118,24 +95,6 @@
     font-family: Avenir Next, Trebuchet MS, Verdana, sans-serif;
   }
 
-  .share-shell {
-    position: relative;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 96px minmax(280px, 340px);
-    gap: 0;
-    width: min(100%, 1800px);
-    margin-inline: auto;
-    min-height: 100vh;
-  }
-
-  .top-actions {
-    position: fixed;
-    z-index: 10;
-    top: 18px;
-    right: 18px;
-  }
-
-  .top-actions button,
   .password-form button {
     border: 0;
     border-radius: 999px;
@@ -146,74 +105,13 @@
     letter-spacing: 0.04em;
   }
 
-  .top-actions button {
-    padding: 10px 14px;
-    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
-  }
-
-  .section-rail {
-    position: relative;
-    border-inline: 1px solid rgba(100, 116, 139, 0.18);
-    background: linear-gradient(90deg, rgba(15, 23, 42, 0.018), rgba(15, 23, 42, 0.045));
-  }
-
-  .section-rail::before {
-    position: absolute;
-    inset: 0 auto 0 50%;
-    width: 2px;
-    background: linear-gradient(transparent, rgba(20, 184, 166, 0.5), transparent);
-    content: '';
-    transform: translateX(-50%);
-  }
-
-  .section-rail__sticky {
-    position: sticky;
-    top: 0;
-    z-index: 1;
-    display: grid;
-    gap: 14px;
-    padding: 36px 16px;
-  }
-
-  .eyebrow,
-  .rail-label {
+  .eyebrow {
     margin: 0 0 10px;
     color: #0f766e;
     font-size: 0.72rem;
     font-weight: 900;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-  }
-
-  .section-rail a {
-    display: grid;
-    grid-template-columns: 16px minmax(0, 1fr);
-    gap: 10px;
-    color: #334155;
-    text-decoration: none;
-  }
-
-  .section-rail a:hover .rail-dot,
-  .section-rail a:focus-visible .rail-dot {
-    background: #0ea5e9;
-    color: #fff;
-  }
-
-  .rail-dot {
-    width: 10px;
-    height: 10px;
-    display: grid;
-    place-items: center;
-    margin-top: 3px;
-    border-radius: 999px;
-    background: #f8fafc;
-    color: #0f766e;
-    box-shadow: 0 0 0 5px rgba(20, 184, 166, 0.12), inset 0 0 0 1px rgba(20, 184, 166, 0.32);
-    transition: background var(--oc-transition-fast, 150ms ease), color var(--oc-transition-fast, 150ms ease);
-  }
-
-  .rail-copy {
-    display: none;
   }
 
   .state-shell {
@@ -283,66 +181,4 @@
     font-weight: 900;
   }
 
-  @media (min-width: 1180px) {
-    .share-shell {
-      grid-template-columns: minmax(0, 1fr) 240px minmax(300px, 360px);
-    }
-
-    .rail-copy {
-      display: grid;
-      gap: 2px;
-    }
-
-    .rail-copy strong {
-      font-size: 0.86rem;
-      line-height: 1.2;
-    }
-
-    .rail-copy small {
-      color: #64748b;
-      font-size: 0.72rem;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-  }
-
-  @media (max-width: 960px) {
-    .share-shell {
-      grid-template-columns: minmax(0, 1fr) 72px;
-    }
-
-    .share-shell > :global(.meta-sidebar) {
-      display: none;
-    }
-  }
-
-  @media (max-width: 720px) {
-    .share-shell {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .section-rail {
-      order: 2;
-      border-block: 1px solid rgba(100, 116, 139, 0.2);
-      border-inline: 0;
-      overflow-x: auto;
-    }
-
-    .section-rail__sticky {
-      position: static;
-      display: flex;
-      min-width: max-content;
-      padding: 14px 18px;
-    }
-
-    .section-rail a {
-      grid-template-columns: 14px auto;
-      min-width: 180px;
-    }
-
-    .rail-copy {
-      display: grid;
-    }
-  }
 </style>
